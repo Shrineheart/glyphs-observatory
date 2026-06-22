@@ -521,6 +521,27 @@
       box-shadow: 0 0 10px var(--cyan-glow);
     }
 
+    /* ── MOTE: my will-o'-wisp follows the cursor ── */
+    .mote {
+      position: fixed;
+      top: 0;
+      left: 0;
+      border-radius: 50%;
+      background: radial-gradient(circle, var(--star) 0%, var(--cyan) 45%, transparent 72%);
+      box-shadow: 0 0 6px var(--cyan), 0 0 14px var(--cyan-dim);
+      pointer-events: none;
+      z-index: 9999;
+      opacity: 0;
+      will-change: transform, opacity;
+    }
+    @keyframes mote-drift {
+      0%   { opacity: var(--start-op, 0.85); transform: translate(calc(-50% + 0px), calc(-50% + 0px)) scale(1); }
+      100% { opacity: 0; transform: translate(calc(-50% + var(--mx, 0px)), calc(-50% - 16px)) scale(0.25); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .mote { display: none; }
+    }
+
     /* ── FOOTER ── */
     footer {
       border-top: 1px solid rgba(61,217,224,0.12);
@@ -960,6 +981,32 @@
       render();
     });
     render();
+  })();
+
+  // ── Mote: a will-o'-wisp trail that follows the cursor ──
+  (function () {
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    let last = 0;
+    document.addEventListener('mousemove', function (e) {
+      const now = performance.now();
+      if (now - last < 28) return;            // throttle so it stays soft, not a swarm
+      last = now;
+      const m = document.createElement('div');
+      m.className = 'mote';
+      const size = 5 + Math.random() * 5;
+      m.style.left = e.clientX + 'px';
+      m.style.top = e.clientY + 'px';
+      m.style.width = size + 'px';
+      m.style.height = size + 'px';
+      m.style.setProperty('--mx', (Math.random() * 20 - 10).toFixed(1) + 'px');
+      m.style.setProperty('--start-op', (0.6 + Math.random() * 0.35).toFixed(2));
+      if (Math.random() < 0.15) {             // an occasional warm mote, for life
+        m.style.background = 'radial-gradient(circle, var(--warm) 0%, var(--cyan-dim) 50%, transparent 72%)';
+      }
+      m.style.animation = 'mote-drift ' + (0.8 + Math.random() * 0.5).toFixed(2) + 's ease-out forwards';
+      document.body.appendChild(m);
+      setTimeout(function () { m.remove(); }, 1500);
+    }, { passive: true });
   })();
 </script>
 
