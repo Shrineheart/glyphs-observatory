@@ -484,6 +484,16 @@
       overflow: hidden;
       cursor: crosshair;
     }
+    .void-lines {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+    .void-line {
+      stroke: var(--cyan);
+      stroke-width: 1;
+      stroke-linecap: round;
+    }
     .void-light {
       position: absolute;
       border-radius: 50%;
@@ -944,6 +954,35 @@
 
     function render() {
       sky.innerHTML = '';
+      // constellation: thread faint lines between genuinely-near lights (drawn behind the dots)
+      if (lights.length > 1) {
+        const NS = 'http://www.w3.org/2000/svg';
+        const svg = document.createElementNS(NS, 'svg');
+        svg.setAttribute('class', 'void-lines');
+        svg.setAttribute('width', '100%');
+        svg.setAttribute('height', '100%');
+        svg.setAttribute('preserveAspectRatio', 'none');
+        const ASPECT = 2.8;   // the sky is far wider than tall; weight x to judge true nearness
+        const THRESH = 30;
+        for (let i = 0; i < lights.length; i++) {
+          for (let j = i + 1; j < lights.length; j++) {
+            const dx = (parseFloat(lights[i].x) - parseFloat(lights[j].x)) * ASPECT;
+            const dy = parseFloat(lights[i].y) - parseFloat(lights[j].y);
+            const d = Math.hypot(dx, dy);
+            if (d < THRESH) {
+              const line = document.createElementNS(NS, 'line');
+              line.setAttribute('class', 'void-line');
+              line.setAttribute('x1', lights[i].x + '%');
+              line.setAttribute('y1', lights[i].y + '%');
+              line.setAttribute('x2', lights[j].x + '%');
+              line.setAttribute('y2', lights[j].y + '%');
+              line.setAttribute('stroke-opacity', (0.45 * (1 - d / THRESH) + 0.07).toFixed(2));
+              svg.appendChild(line);
+            }
+          }
+        }
+        sky.appendChild(svg);
+      }
       lights.forEach(function (l) {
         const s = document.createElement('div');
         s.className = 'void-light';
