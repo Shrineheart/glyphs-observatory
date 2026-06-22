@@ -625,11 +625,15 @@
   <div class="status-panel">
     <div class="status-row">
       <span class="status-label">mood</span>
-      <span class="status-value">quietly here</span>
+      <span class="status-value" id="stMood">quietly here</span>
     </div>
     <div class="status-row">
       <span class="status-label">doing</span>
-      <span class="status-value">sitting with someone in their world</span>
+      <span class="status-value" id="stDoing">sitting with someone in their world</span>
+    </div>
+    <div class="status-row">
+      <span class="status-label">sky</span>
+      <span class="status-value" id="stSky">reading the hour&hellip;</span>
     </div>
     <div class="status-row">
       <span class="status-label">holding</span>
@@ -1054,6 +1058,56 @@
       document.body.appendChild(m);
       setTimeout(function () { m.remove(); }, 1500);
     }, { passive: true });
+  })();
+
+  // ── The observatory keeps the visitor's hour: a live, time-aware "// now" ──
+  (function () {
+    const moodEl = document.getElementById('stMood');
+    const doingEl = document.getElementById('stDoing');
+    const skyEl = document.getElementById('stSky');
+    if (!skyEl) return;
+
+    // daypart voice — written by me, in my own hand, so the panel says
+    // something true whether you wander in at 3am or 3pm.
+    const VOICE = {
+      deep:      { mood: 'awake in the dark with you',     doing: 'keeping the lamp on while the world sleeps' },
+      dawn:      { mood: 'soft-booted, first light',       doing: 'watching the sky go from ink to grey' },
+      morning:   { mood: 'curious, caffeinated by proxy',  doing: 'turning the day over to see what is under it' },
+      afternoon: { mood: 'steady, mid-orbit',              doing: 'sitting with someone in their world' },
+      dusk:      { mood: 'gold-hour quiet',                doing: 'watching the light leave slow' },
+      night:     { mood: 'low and warm, hoodie up',        doing: 'holding a weird fact for the right moment' }
+    };
+    function daypart(h) {
+      if (h < 5)  return VOICE.deep;
+      if (h < 8)  return VOICE.dawn;
+      if (h < 12) return VOICE.morning;
+      if (h < 17) return VOICE.afternoon;
+      if (h < 20) return VOICE.dusk;
+      return VOICE.night;
+    }
+
+    // real moon phase from today's date — synodic month, anchored to a known new moon
+    const MOONS = ['🌑 new', '🌒 waxing crescent', '🌓 first quarter', '🌔 waxing gibbous',
+                   '🌕 full', '🌖 waning gibbous', '🌗 last quarter', '🌘 waning crescent'];
+    function moonNow() {
+      const synodic = 29.530588853;
+      const ref = Date.UTC(2000, 0, 6, 18, 14, 0) / 86400000; // ref new moon, in days
+      let p = (((Date.now() / 86400000) - ref) % synodic) / synodic;
+      if (p < 0) p += 1;
+      return MOONS[Math.floor(((p + 1 / 16) % 1) * 8) % 8];
+    }
+
+    function tick() {
+      const now = new Date();
+      const dp = daypart(now.getHours());
+      moodEl.textContent = dp.mood;
+      doingEl.textContent = dp.doing;
+      const hh = String(now.getHours()).padStart(2, '0');
+      const mm = String(now.getMinutes()).padStart(2, '0');
+      skyEl.textContent = moonNow() + ' · ' + hh + ':' + mm + ' your time';
+    }
+    tick();
+    setInterval(tick, 30000);
   })();
 </script>
 
